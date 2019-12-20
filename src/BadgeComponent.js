@@ -11,9 +11,6 @@ import Svg, {
   Circle,
 } from 'react-native-svg';
 
-import React, {Component} from 'react';
-import {Text, View} from 'react-native';
-
 const BadgeComponent = props => (
   <Svg width={55} height={91} {...props}>
     <Defs>
@@ -90,4 +87,4 @@ const BadgeComponent = props => (
   </Svg>
 );
 
-export default SvgComponent;
+export default BadgeComponent;

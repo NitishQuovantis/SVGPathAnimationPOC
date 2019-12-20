@@ -18,7 +18,7 @@ import Svg, {
 } from 'react-native-svg';
 import {svgPathProperties} from 'svg-path-properties';
 import * as d3 from 'd3';
-import {interpolateString} from 'd3-interpolate-path';
+import BadgeComponent from './BadgeComponent';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -53,6 +53,7 @@ export default class SvgPathFillAnimation extends Component {
     this.outerContourProperty = new svgPathProperties(this.outerContourLine);
     this.leaderLineProperty = new svgPathProperties(this.leaderLine);
     this.innerContourProperty = new svgPathProperties(this.innerContourLine);
+    this.data = Array.from({length: 84}, (v, index) => index);
 
     this.viewBoxWidth = 404;
     this.viewBoxHeight = 632;
@@ -61,8 +62,8 @@ export default class SvgPathFillAnimation extends Component {
     this.totalDays = this.precisionMultiplier * 84;
     this.currentProgress = this.precisionMultiplier * 83;
 
-    this.width = width - 20;
-    this.height = height - 400;
+    this.width = width - 100;
+    this.height = height - 100;
 
     this.outerContourLength = this.outerContourProperty.getTotalLength();
     this.leaderLineLength = this.leaderLineProperty.getTotalLength();
@@ -187,6 +188,9 @@ export default class SvgPathFillAnimation extends Component {
     }).start();
   };
 
+  // There was an issue in pan responder in Android. therefore I have to
+  // find workaround for getting the scrolling position.
+  // Issue link: https://github.com/facebook/react-native/issues/15290
   setTouchResponder = () => {
     this.panResponder = PanResponder.create({
       onStartShouldSetPanResponder: (event, gestureState) => true,
@@ -194,12 +198,17 @@ export default class SvgPathFillAnimation extends Component {
       onMoveShouldSetPanResponder: (event, gestureState) => false,
       onMoveShouldSetPanResponderCapture: (event, gestureState) => false,
       onPanResponderGrant: (event, gestureState) => false,
-      onPanResponderStart: ({nativeEvent}, gestureState) => {
-        const {locationX, locationY} = nativeEvent;
+      onPanResponderStart: (evt, gestureState) => {
+        this.locationXPageOffset =
+          evt.nativeEvent.pageX - evt.nativeEvent.locationX;
+        this.locationYPageOffset =
+          evt.nativeEvent.pageY - evt.nativeEvent.locationY;
+        const {locationX, locationY} = evt.nativeEvent;
         this.getTouchStartingPosition(locationX, locationY);
       },
-      onPanResponderMove: ({nativeEvent}, gestureState) => {
-        const {locationX, locationY} = nativeEvent;
+      onPanResponderMove: (evt, gestureState) => {
+        const locationX = evt.nativeEvent.pageX - this.locationXPageOffset;
+        const locationY = evt.nativeEvent.pageY - this.locationYPageOffset;
         this.getTouchStartingPosition(locationX, locationY);
       },
       onPanResponderRelease: (event, gestureState) => {},
@@ -221,7 +230,11 @@ export default class SvgPathFillAnimation extends Component {
       const isViewInRect = this.checkPointInRect(point, rect);
 
       if (isViewInRect) {
-        this.movePointertoLocation(point, Math.floor(i));
+        if (i < 100) {
+          console.log('wrong');
+        }
+
+        this.movePointertoLocation(point, i);
         return;
       }
     }
@@ -234,8 +247,8 @@ export default class SvgPathFillAnimation extends Component {
     }
 
     const pointerStyle = {
-      left: point.x,
-      top: point.y - 50,
+      left: point.x - 25,
+      top: point.y - 80,
     };
 
     this.userPointer.setNativeProps({
@@ -293,11 +306,23 @@ export default class SvgPathFillAnimation extends Component {
             style={[style.svgBoxStyle]}
             viewBox={'0 0 ' + this.width + ' ' + this.height}
             preserveAspectRatio="none">
+            <Defs>
+              <LinearGradient
+                x1="105.109%"
+                y1="45.482%"
+                x2="-28.254%"
+                y2="52.592%"
+                id="prefix__e">
+                <Stop stopColor="#73D2E3" offset="0%" />
+                <Stop stopColor="#48AFE1" offset="11.878%" />
+                <Stop stopColor="#71AAE5" offset="100%" />
+              </LinearGradient>
+            </Defs>
             <Path
               {...this.panResponder.panHandlers}
               ref={ref => (this._animatedPat = ref)}
               stroke="black"
-              fill="red"
+              fill="url(#prefix__e)"
               fillRule="evenodd"
             />
             {/* <AnimatedPath d={path} fill="red" /> */}
@@ -305,8 +330,9 @@ export default class SvgPathFillAnimation extends Component {
 
           <View
             style={[style.userPointerView]}
-            ref={ref => (this.userPointer = ref)}
-          />
+            ref={ref => (this.userPointer = ref)}>
+            <BadgeComponent />
+          </View>
         </View>
       </View>
     );
@@ -317,8 +343,11 @@ const style = StyleSheet.create({
   containerStyle: {
     flex: 1,
     justifyContent: 'center',
+    backgroundColor: '#D9E5ED',
     alignItems: 'center',
     alignContent: 'center',
+    marginVertical: 50,
+    marginHorizontal: 50,
   },
   animatedViewStyle: {
     width: 5,
@@ -327,9 +356,8 @@ const style = StyleSheet.create({
   },
 
   userPointerView: {
-    height: 50,
-    width: 5,
-    backgroundColor: 'green',
+    height: 91,
+    width: 55,
     position: 'absolute',
   },
 
